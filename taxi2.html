@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Taxi กาฬสินธุ์ BY Jirapong</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<header class="bg-blue-600 text-white p-4 text-center text-xl font-bold">
+🚖 Taxi กาฬสินธุ์ BY Jirapong
+</header>
+
+<main class="p-4">
+  <div id="jobs" class="space-y-4"></div>
+</main>
+
+<script>
+// 1. Google Sheet CSV ภาษาไทย
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ76zBRMHSdIQZdIsINO_AkNjOKJwa8bTC2b8s03L9_j_1mbAKCLb0ie4_icaye5wtBGXsP62bSjS-/pub?gid=699971133&single=true&output=csv";
+
+// 2. Apps Script URL สำหรับอัปเดตสถานะ
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxehIZ8c4RGLfrvK5eXxy3Kp8JZYPCsNkF_Kkyp6F3QZLSkGWacaZ7ATJmu4dHMbtQq/exec";
+
+let lastJobsCount = 0;
+
+async function fetchJobs() {
+  const res = await fetch(SHEET_CSV_URL);
+  const text = await res.text();
+  const lines = text.trim().split("\n");
+  const jobs = lines.slice(1).map(line => {
+    const [id, customer, date, time, pickup, dropoff, phone, status] = line.split(",");
+    return { id, customer, date, time, pickup, dropoff, phone, status };
+  });
+  return jobs;
+}
+
+function renderJobs(jobs) {
+  const container = document.getElementById("jobs");
+  container.innerHTML = "";
+  jobs.forEach(job => {
+    const card = document.createElement("div");
+    card.className = `p-4 rounded-xl shadow flex flex-col space-y-2 ${job.status === "รับแล้ว" ? "bg-gray-200" : "bg-white"}`;
+    card.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-lg">${job.customer}</span>
+        ${job.status === "รอรับ" ? `<button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600" onclick="acceptJob(${job.id})">รับงาน</button>` : `<span class="text-gray-600 font-semibold">✅ รับแล้ว</span>`}
+      </div>
+      <div>📅 วันที่: ${job.date} เวลา: ${job.time}</div>
+      <div>📍 จุดรับ: ${job.pickup}</div>
+      <div>🏁 จุดส่ง: ${job.dropoff}</div>
+      <div>📞 <a href="tel:${job.phone}" class="text-blue-600 underline">${job.phone}</a></div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+async function acceptJob(id) {
+  await fetch(`${APPS_SCRIPT_URL}?id=${id}`);
+  alert("คุณรับงานเรียบร้อย!");
+  loadJobs();
+}
+
+async function loadJobs() {
+  const jobs = await fetchJobs();
+  renderJobs(jobs);
+
+  // แจ้งเตือนเสียงงานใหม่
+  if (jobs.length > lastJobsCount) {
+    const audio = new Audio("https://www.soundjay.com/buttons/beep-07.mp3");
+    audio.play();
+  }
+  lastJobsCount = jobs.length;
+}
+
+// ตรวจสอบงานทุก 10 วินาที
+setInterval(loadJobs, 10000);
+loadJobs();
+</script>
+
+</body>
+</html>
