@@ -13,7 +13,7 @@
   25%, 75% { background-color: #6ee7b7; } /* bg-green-400 */
 }
 .blink-animation {
-  animation: blink 1s ease-in-out 3; /* วิ่ง 3 ครั้ง */
+  animation: blink 1s ease-in-out 3;
 }
 
 @keyframes slideDown {
@@ -32,15 +32,15 @@
 </header>
 
 <main class="p-4">
-  <div id="jobs" class="space-y-4 flex flex-col-reverse"></div> <!-- ใหม่อยู่ด้านบน -->
+  <div id="jobs" class="space-y-4 flex flex-col-reverse"></div> <!-- งานใหม่อยู่บนสุด -->
 </main>
 
 <script>
-// Google Sheet CSV ภาษาไทย
+// URL Google Sheet CSV
 const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ76zBRMHSdIQZdIsINO_AkNjOKJwa8bTC2b8s03L9_j_1mbAKCLb0ie4_icaye5wtBGXsP62bSjS-/pub?gid=699971133&single=true&output=csv";
 
-// Apps Script URL สำหรับอัปเดตสถานะ
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxehIZ8c4RGLfrvK5eXxy3Kp8JZYPCsNkF_Kkyp6F3QZLSkGWacaZ7ATJmu4dHMbtQq/exec";
+// URL Apps Script (Web app) สำหรับอัปเดตสถานะ
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/YOUR_APPS_SCRIPT_ID/exec";
 
 let lastJobs = [];
 
@@ -62,11 +62,13 @@ function renderJobs(jobs) {
   jobs.forEach(job => {
     const card = document.createElement("div");
 
-    const isNew = job.status === "รอรับ" && !lastJobs.some(j => j.id === job.id); // งานใหม่
+    // งานใหม่: รอรับและยังไม่เคยปรากฏใน lastJobs
+    const isNew = job.status === "รอรับ" && !lastJobs.some(j => j.id === job.id);
+
     card.className = `p-4 rounded-xl shadow flex flex-col space-y-2 ${job.status === "รับแล้ว" ? "bg-gray-200" : "bg-white"} ${isNew ? "blink-animation slide-down" : ""}`;
 
     const acceptButton = job.status !== "รับแล้ว"
-      ? `<button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600" onclick="acceptJob('${job.id}')">รับงาน</button>`
+      ? `<button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600" onclick="acceptJob('${encodeURIComponent(job.id)}')">รับงาน</button>`
       : `<span class="text-gray-600 font-semibold">✅ รับแล้ว</span>`;
 
     card.innerHTML = `
@@ -91,9 +93,10 @@ async function acceptJob(id) {
     const res = await fetch(`${APPS_SCRIPT_URL}?id=${id}`);
     if (res.ok) {
       alert("คุณรับงานเรียบร้อย!");
-      loadJobs();
+      loadJobs(); // โหลดงานใหม่เพื่ออัปเดตสถานะ
     } else {
       alert("เกิดข้อผิดพลาดในการรับงาน กรุณาลองใหม่");
+      console.log(await res.text());
     }
   } catch (err) {
     alert("ไม่สามารถเชื่อมต่อ Apps Script ได้");
@@ -104,7 +107,7 @@ async function acceptJob(id) {
 async function loadJobs() {
   const jobs = await fetchJobs();
 
-  // ตรวจจับงานใหม่
+  // ตรวจจับงานใหม่และเล่นเสียง
   const newJobsCount = jobs.filter(j => !lastJobs.some(old => old.id === j.id)).length;
   if (newJobsCount > 0) {
     const audio = new Audio("https://www.soundjay.com/buttons/beep-07.mp3");
@@ -114,7 +117,7 @@ async function loadJobs() {
   renderJobs(jobs);
 }
 
-// ตรวจสอบงานทุก 10 วินาที
+// โหลดงานทุก 10 วินาที
 setInterval(loadJobs, 10000);
 loadJobs();
 </script>
