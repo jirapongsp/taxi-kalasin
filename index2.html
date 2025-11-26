@@ -6,7 +6,7 @@
 <title>Taxi กาฬสินธุ์ BY Jirapong</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
-<!-- เพิ่ม keyframes สำหรับ blink/swing -->
+<!-- Keyframes สำหรับ blink และ slide-down -->
 <style>
 @keyframes blink {
   0%, 50%, 100% { background-color: #d1fae5; } /* bg-green-100 */
@@ -14,6 +14,14 @@
 }
 .blink-animation {
   animation: blink 1s ease-in-out 3; /* วิ่ง 3 ครั้ง */
+}
+
+@keyframes slideDown {
+  0% { transform: translateY(-20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.slide-down {
+  animation: slideDown 0.5s ease-out;
 }
 </style>
 </head>
@@ -24,7 +32,7 @@
 </header>
 
 <main class="p-4">
-  <div id="jobs" class="space-y-4 flex flex-col-reverse"></div> <!-- ใช้ flex-col-reverse เพื่อให้ใหม่อยู่บนสุด -->
+  <div id="jobs" class="space-y-4 flex flex-col-reverse"></div> <!-- ใหม่อยู่ด้านบน -->
 </main>
 
 <script>
@@ -53,8 +61,9 @@ function renderJobs(jobs) {
 
   jobs.forEach(job => {
     const card = document.createElement("div");
-    const isNew = job.status === "รอรับ" && !lastJobs.some(j => j.id === job.id); // งานใหม่ที่ยังไม่เคยแสดง
-    card.className = `p-4 rounded-xl shadow flex flex-col space-y-2 ${job.status === "รับแล้ว" ? "bg-gray-200" : "bg-white"} ${isNew ? "blink-animation" : ""}`;
+
+    const isNew = job.status === "รอรับ" && !lastJobs.some(j => j.id === job.id); // งานใหม่
+    card.className = `p-4 rounded-xl shadow flex flex-col space-y-2 ${job.status === "รับแล้ว" ? "bg-gray-200" : "bg-white"} ${isNew ? "blink-animation slide-down" : ""}`;
 
     const acceptButton = job.status !== "รับแล้ว"
       ? `<button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600" onclick="acceptJob('${job.id}')">รับงาน</button>`
@@ -74,8 +83,7 @@ function renderJobs(jobs) {
     container.appendChild(card);
   });
 
-  // อัปเดต lastJobs สำหรับตรวจจับงานใหม่ครั้งต่อไป
-  lastJobs = jobs;
+  lastJobs = jobs; // อัปเดต lastJobs
 }
 
 async function acceptJob(id) {
@@ -96,7 +104,7 @@ async function acceptJob(id) {
 async function loadJobs() {
   const jobs = await fetchJobs();
 
-  // แจ้งเตือนเสียงงานใหม่
+  // ตรวจจับงานใหม่
   const newJobsCount = jobs.filter(j => !lastJobs.some(old => old.id === j.id)).length;
   if (newJobsCount > 0) {
     const audio = new Audio("https://www.soundjay.com/buttons/beep-07.mp3");
