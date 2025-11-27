@@ -1,138 +1,130 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>รับงาน</title>
-<style>
-  body {
-    font-family: "Sarabun", sans-serif;
-    background: #f5f5f5;
-    margin: 0;
-    padding: 0;
-  }
-  .container {
-    max-width: 500px;
-    margin: 30px auto;
-    background: #fff;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  }
-  h1 {
-    text-align: center;
-    color: #333;
-  }
-  .job-list {
-    margin-top: 20px;
-  }
-  .job-item {
-    background: #e3f2fd;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .job-info {
-    max-width: 70%;
-  }
-  .job-title {
-    font-weight: bold;
-    color: #0d47a1;
-    margin: 0 0 5px 0;
-  }
-  .job-details {
-    font-size: 0.9em;
-    color: #555;
-  }
-  .accept-btn {
-    background: #1976d2;
-    color: #fff;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-  .accept-btn:hover {
-    background: #0d47a1;
-  }
-  @media(max-width: 400px){
-    .job-info { max-width: 100%; margin-bottom: 10px; }
-    .accept-btn { width: 100%; }
-  }
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Taxi กาฬสินธุ์ BY Jirapong</title>
+<script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div class="container">
-  <h1>รับงาน 🚖</h1>
-  <div class="job-list" id="jobList">
-    <!-- ตัวอย่างงานจะถูกสร้างด้วย JavaScript -->
-  </div>
-</div>
+
+<body class="bg-gray-100 font-sans">
+
+<header class="bg-blue-600 text-white p-4 text-center text-xl font-bold">
+🚖 Taxi กาฬสินธุ์ – ระบบงานคนขับ
+</header>
+
+<main class="p-4">
+  <div id="jobs" class="space-y-4"></div>
+</main>
 
 <script>
-  // ตัวอย่างข้อมูลงาน
-  const jobs = [
-    { timestamp: "20251127T101200", title: "ส่งอาหารร้าน A", details: "ลูกค้า: นายสมชาย, ที่อยู่: ถนนสุขุมวิทย์" },
-    { timestamp: "20251127T101300", title: "รับเอกสารบริษัท B", details: "ลูกค้า: นางสาวสุดา, ที่อยู่: ซอยพหลโยธิน" }
-  ];
-
-  const jobList = document.getElementById("jobList");
-
-  jobs.forEach(job => {
-    const div = document.createElement("div");
-    div.className = "job-item";
-
-    const infoDiv = document.createElement("div");
-    infoDiv.className = "job-info";
-    infoDiv.innerHTML = `<p class="job-title">${job.title}</p><p class="job-details">${job.details}</p>`;
-
-    const btn = document.createElement("button");
-    btn.className = "accept-btn";
-    btn.textContent = "รับงาน";
-    btn.onclick = () => acceptJob(job.timestamp);
-
-    div.appendChild(infoDiv);
-    div.appendChild(btn);
-    jobList.appendChild(div);
-  });
-
-  function acceptJob(timestamp) {
-    if (!confirm("คุณต้องการรับงานนี้ใช่หรือไม่?")) return;
-
-    // URL ของ Apps Script Web App ของคุณ
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxehIZ8c4RGLfrvK5eXxy3Kp8JZYPCsNkF_Kkyp6F3QZLSkGWacaZ7ATJmu4dHMbtQq/exec"; // <-- แก้ตรงนี้
-
-    fetch(scriptURL, {
-      method: "POST",
-      body: JSON.stringify({ timestamp: timestamp }),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-    .then(response => response.text())
-    .then(result => {
-      alert("รับงานเรียบร้อยแล้ว ✅");
-      console.log(result);
-      location.reload(); // โหลดหน้าซ้ำเพื่ออัปเดตสถานะ
-    })
-    .catch(error => {
-      alert("เกิดข้อผิดพลาด ❌ โปรดลองอีกครั้ง");
-      console.error(error);
-    });
-  }
-</script>
-</body>
-</html>
 
 // 1) CSV ของ Google Sheet
-//const SHEET_CSV_URL =
-//"https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ76zBRMHSdIQZdIsINO_AkNjOKJwa8bTC2b8s03L9_j_1mbAKCLb0ie4_icaye5wtBGXsP62bSjS-/pub?gid=699971133&single=true&output=csv";
-// 2) Apps Script Web App URL
-//const APPS_SCRIPT_URL =
-//"https://script.google.com/macros/s/AKfycbxehIZ8c4RGLfrvK5eXxy3Kp8JZYPCsNkF_Kkyp6F3QZLSkGWacaZ7ATJmu4dHMbtQq/exec";
+const SHEET_CSV_URL =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ76zBRMHSdIQZdIsINO_AkNjOKJwa8bTC2b8s03L9_j_1mbAKCLb0ie4_icaye5wtBGXsP62bSjS-/pub?gid=699971133&single=true&output=csv";
 
+// 2) Apps Script Web App URL
+const APPS_SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbxehIZ8c4RGLfrvK5eXxy3Kp8JZYPCsNkF_Kkyp6F3QZLSkGWacaZ7ATJmu4dHMbtQq/exec";
+
+let lastJobsCount = 0;
+
+
+// อ่าน CSV จากชีต
+function parseCSV(text) {
+  const rows = text.trim().split("\n").map(r => r.split(","));
+  const headers = rows.shift();
+  return rows.map(r => {
+    return {
+      timestamp: r[0],
+      customer: r[1],
+      name2: r[2],
+      time: r[3],
+      pickup: r[4],
+      dropoff: r[5],
+      phone: r[6],
+      driver: r[7],
+      status: r[8],
+      acceptTime: r[9]
+    };
+  });
+}
+
+async function fetchJobs() {
+  const res = await fetch(SHEET_CSV_URL);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+
+// แสดงรายการงานทั้งหมด
+function renderJobs(jobs) {
+  const container = document.getElementById("jobs");
+  container.innerHTML = "";
+
+  jobs.forEach(job => {
+    const card = document.createElement("div");
+
+    const isAccepted = job.status === "รับแล้ว";
+
+    card.className =
+      `p-4 rounded-xl shadow flex flex-col space-y-2 ${isAccepted ? "bg-gray-300" : "bg-white"}`;
+
+    card.innerHTML = `
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-lg">${job.customer}</span>
+
+        ${
+          isAccepted
+          ? `<span class="text-gray-600 font-semibold">✔ รับงานแล้ว</span>`
+          : `<button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
+                onclick="acceptJob('${job.timestamp}', 'นายเอ')">
+                รับงาน
+             </button>`
+        }
+      </div>
+
+      <div>📅 วันที่: ${job.name2} เวลา ${job.time}</div>
+      <div>📍 จุดรับ: ${job.pickup}</div>
+      <div>🎯 จุดส่ง: ${job.dropoff}</div>
+      <div>📞 โทร: <a href="tel:${job.phone}" class="text-blue-600 underline">${job.phone}</a></div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+
+// ส่งข้อมูลรับงานไป Apps Script
+async function acceptJob(id, driverName) {
+  await fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      id: id,
+      driver: driverName
+    })
+  });
+
+  alert("รับงานสำเร็จ!");
+  loadJobs();
+}
+
+
+// โหลดข้อมูลทุก 10 วินาที + เสียงแจ้งเตือนงานใหม่
+async function loadJobs() {
+  const jobs = await fetchJobs();
+  renderJobs(jobs);
+
+  if (jobs.length > lastJobsCount) {
+    new Audio("https://www.soundjay.com/buttons/beep-07.mp3").play();
+  }
+  lastJobsCount = jobs.length;
+}
+
+setInterval(loadJobs, 10000);
+loadJobs();
+
+</script>
+
+</body>
+</html>
