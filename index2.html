@@ -1,87 +1,88 @@
-// ===================================
-// CONFIG
-// ===================================
-const SHEET_NAME = "Form_Responses";   
-const TELEGRAM_TOKEN = "8518184621:AAHRUV9MjWBbhNfyGqUDSWzBJah_l04xB10";
-const TELEGRAM_CHAT_ID = "-1003472863219";
+**เชื่อมต่อ**: deploy Google Apps Script เป็น **Web app** (ให้สิทธิ์ `Anyone, even anonymous` หากต้องการให้เรียกได้โดยไม่ต้องล็อกอิน) แล้วใช้ URL ที่ได้เป็น `WEBHOOK_URL` ในหน้า frontend / HTML
 
-// ===================================
-// MAIN WEB APP FUNCTION
-// ===================================
+
+```javascript
+// Google Apps Script (Code.js)
+// ตั้งค่า: SHEET_NAME, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
+
+
+const SHEET_NAME = 'Form_Responses';
+const TELEGRAM_TOKEN = '8518184621:AAHRUV9MjWBbhNfyGqUDSWzBJah_l04xB10';
+const TELEGRAM_CHAT_ID = '-1003472863219';
+
+
+// doGet: คืนค่า JSON รายการงาน (อ่านจาก sheet)
+function doGet(e) {
+try {
+const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+const rows = sheet.getDataRange().getValues();
+
+
+// สมมติ header อยู่แถวแรก
+const headers = rows[0];
+const result = [];
+
+
+for (let i = 1; i < rows.length; i++) {
+const r = rows[i];
+// ตัวอย่าง: A=Timestamp, B..G = ข้อมูลอื่นๆ, H=Driver, I=Status, J=AcceptTime
+const item = {
+row: i + 1,
+id: new Date(r[0]).getTime(), // ส่งเป็น milliseconds
+rawTimestamp: r[0],
+from: r[1] || '',
+to: r[2] || '',
+note: r[3] || '',
+passenger: r[4] || '',
+price: r[5] || '',
+driver: r[7] || '',
+status: r[8] || '',
+acceptTime: r[9] || ''
+};
+result.push(item);
+}
+
+
+const output = ContentService.createTextOutput(JSON.stringify({ status: 'success', jobs: result }))
+.setMimeType(ContentService.MimeType.JSON);
+output.getHeaders().push({ name: 'Access-Control-Allow-Origin', value: '*' });
+return output;
+
+
+} catch (err) {
+return ContentService.createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+.setMimeType(ContentService.MimeType.JSON);
+}
+}
+
+
+// doPost: รับ { id, driver } และอัพเดตแถวที่ตรงกับ timestamp (มิลลิวินาที)
 function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
+try {
+const data = JSON.parse(e.postData.contents);
+const rowId = Number(data.id);
+const driverName = data.driver;
 
-    const rowId = data.id;          // timestamp (ใช้เป็นรหัสงาน)
-    const driverName = data.driver; // ชื่อคนขับ
 
-    const result = updateJob(rowId, driverName);
+const result = updateJob(rowId, driverName);
 
-    if (result.status === "success") {
-      sendTelegram(
-        "🚖 มีคนรับงานแล้ว!\n\n" +
-        `📌 รหัสงาน: ${rowId}\n` +
-        `👨‍✈️ คนขับ: ${driverName}\n` +
-        `⏰ เวลา: ${new Date().toLocaleString("th-TH")}\n`
-      );
-    }
 
-    return ContentService.createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON);
+if (result.status === 'success') {
+sendTelegram(
+'🚖 มีคนรับงานแล้ว!
 
-  } catch (err) {
-    return ContentService.createTextOutput(
-      JSON.stringify({ status: "error", message: err.toString() })
-    );
-  }
+
+' +
+`📌 รหัสงาน: ${rowId}
+` +
+`👨‍✈️ คนขับ: ${driverName}
+` +
+`⏰ เวลา: ${new Date().toLocaleString('th-TH')}
+`
+);
 }
 
-// ===================================
-// UPDATE JOB IN SHEET
-// ===================================
-function updateJob(rowId, driverName) {
 
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  const data = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < data.length; i++) {
-
-    let timestamp = data[i][0]; // คอลัมน์ A = Timestamp
-
-    // ใช้ timestamp เป็นรหัสงาน
-    if (String(timestamp) === String(rowId)) {
-
-      // H = Driver
-      sheet.getRange(i + 1, 8).setValue(driverName);
-
-      // I = Status
-      sheet.getRange(i + 1, 9).setValue("รับแล้ว");
-
-      // J = AcceptTime
-      sheet.getRange(i + 1, 10).setValue(new Date());
-
-      return { status: "success", row: i + 1 };
-    }
-  }
-
-  return { status: "not_found" };
-}
-
-// ===================================
-// SEND TELEGRAM MESSAGE
-// ===================================
-function sendTelegram(msg) {
-
-  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-
-  const payload = {
-    chat_id: TELEGRAM_CHAT_ID,
-    text: msg
-  };
-
-  UrlFetchApp.fetch(url, {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload)
-  });
+const output = ContentService.createTextOutput(JSON.stringify(result))
+.setMimeType(ContentService.MimeType.JSON);
 }
