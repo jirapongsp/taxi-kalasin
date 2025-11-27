@@ -1,130 +1,87 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Taxi กาฬสินธุ์ BY Jirapong</title>
-<script src="https://cdn.tailwindcss.com"></script>
-</head>
+// ===================================
+// CONFIG
+// ===================================
+const SHEET_NAME = "Form_Responses";   
+const TELEGRAM_TOKEN = "8518184621:AAHRUV9MjWBbhNfyGqUDSWzBJah_l04xB10";
+const TELEGRAM_CHAT_ID = "-1003472863219";
 
-<body class="bg-gray-100 font-sans">
+// ===================================
+// MAIN WEB APP FUNCTION
+// ===================================
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
 
-<header class="bg-blue-600 text-white p-4 text-center text-xl font-bold">
-🚖 Taxi กาฬสินธุ์ – ระบบงานคนขับ
-</header>
+    const rowId = data.id;          // timestamp (ใช้เป็นรหัสงาน)
+    const driverName = data.driver; // ชื่อคนขับ
 
-<main class="p-4">
-  <div id="jobs" class="space-y-4"></div>
-</main>
+    const result = updateJob(rowId, driverName);
 
-<script>
+    if (result.status === "success") {
+      sendTelegram(
+        "🚖 มีคนรับงานแล้ว!\n\n" +
+        `📌 รหัสงาน: ${rowId}\n` +
+        `👨‍✈️ คนขับ: ${driverName}\n` +
+        `⏰ เวลา: ${new Date().toLocaleString("th-TH")}\n`
+      );
+    }
 
-// 1) CSV ของ Google Sheet
-const SHEET_CSV_URL =
-"https://docs.google.com/spreadsheets/d/e/2PACX-1vQZ76zBRMHSdIQZdIsINO_AkNjOKJwa8bTC2b8s03L9_j_1mbAKCLb0ie4_icaye5wtBGXsP62bSjS-/pub?gid=699971133&single=true&output=csv";
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
 
-// 2) Apps Script Web App URL
-const APPS_SCRIPT_URL =
-"https://script.google.com/macros/s/AKfycbxehIZ8c4RGLfrvK5eXxy3Kp8JZYPCsNkF_Kkyp6F3QZLSkGWacaZ7ATJmu4dHMbtQq/exec";
-
-let lastJobsCount = 0;
-
-
-// อ่าน CSV จากชีต
-function parseCSV(text) {
-  const rows = text.trim().split("\n").map(r => r.split(","));
-  const headers = rows.shift();
-  return rows.map(r => {
-    return {
-      timestamp: r[0],
-      customer: r[1],
-      name2: r[2],
-      time: r[3],
-      pickup: r[4],
-      dropoff: r[5],
-      phone: r[6],
-      driver: r[7],
-      status: r[8],
-      acceptTime: r[9]
-    };
-  });
-}
-
-async function fetchJobs() {
-  const res = await fetch(SHEET_CSV_URL);
-  const text = await res.text();
-  return parseCSV(text);
-}
-
-
-// แสดงรายการงานทั้งหมด
-function renderJobs(jobs) {
-  const container = document.getElementById("jobs");
-  container.innerHTML = "";
-
-  jobs.forEach(job => {
-    const card = document.createElement("div");
-
-    const isAccepted = job.status === "รับแล้ว";
-
-    card.className =
-      `p-4 rounded-xl shadow flex flex-col space-y-2 ${isAccepted ? "bg-gray-300" : "bg-white"}`;
-
-    card.innerHTML = `
-      <div class="flex justify-between items-center">
-        <span class="font-bold text-lg">${job.customer}</span>
-
-        ${
-          isAccepted
-          ? `<span class="text-gray-600 font-semibold">✔ รับงานแล้ว</span>`
-          : `<button class="bg-green-500 text-white px-3 py-1 rounded-lg hover:bg-green-600"
-                onclick="acceptJob('${job.timestamp}', 'นายเอ')">
-                รับงาน
-             </button>`
-        }
-      </div>
-
-      <div>📅 วันที่: ${job.name2} เวลา ${job.time}</div>
-      <div>📍 จุดรับ: ${job.pickup}</div>
-      <div>🎯 จุดส่ง: ${job.dropoff}</div>
-      <div>📞 โทร: <a href="tel:${job.phone}" class="text-blue-600 underline">${job.phone}</a></div>
-    `;
-
-    container.appendChild(card);
-  });
-}
-
-
-// ส่งข้อมูลรับงานไป Apps Script
-async function acceptJob(id, driverName) {
-  await fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      id: id,
-      driver: driverName
-    })
-  });
-
-  alert("รับงานสำเร็จ!");
-  loadJobs();
-}
-
-
-// โหลดข้อมูลทุก 10 วินาที + เสียงแจ้งเตือนงานใหม่
-async function loadJobs() {
-  const jobs = await fetchJobs();
-  renderJobs(jobs);
-
-  if (jobs.length > lastJobsCount) {
-    new Audio("https://www.soundjay.com/buttons/beep-07.mp3").play();
+  } catch (err) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ status: "error", message: err.toString() })
+    );
   }
-  lastJobsCount = jobs.length;
 }
 
-setInterval(loadJobs, 10000);
-loadJobs();
+// ===================================
+// UPDATE JOB IN SHEET
+// ===================================
+function updateJob(rowId, driverName) {
 
-</script>
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
+  const data = sheet.getDataRange().getValues();
 
-</body>
-</html>
+  for (let i = 1; i < data.length; i++) {
+
+    let timestamp = data[i][0]; // คอลัมน์ A = Timestamp
+
+    // ใช้ timestamp เป็นรหัสงาน
+    if (String(timestamp) === String(rowId)) {
+
+      // H = Driver
+      sheet.getRange(i + 1, 8).setValue(driverName);
+
+      // I = Status
+      sheet.getRange(i + 1, 9).setValue("รับแล้ว");
+
+      // J = AcceptTime
+      sheet.getRange(i + 1, 10).setValue(new Date());
+
+      return { status: "success", row: i + 1 };
+    }
+  }
+
+  return { status: "not_found" };
+}
+
+// ===================================
+// SEND TELEGRAM MESSAGE
+// ===================================
+function sendTelegram(msg) {
+
+  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+
+  const payload = {
+    chat_id: TELEGRAM_CHAT_ID,
+    text: msg
+  };
+
+  UrlFetchApp.fetch(url, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload)
+  });
+}
