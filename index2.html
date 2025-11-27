@@ -1,7 +1,7 @@
 //**เชื่อมต่อ**: deploy Google Apps Script เป็น **Web app** (ให้สิทธิ์ `Anyone, even anonymous` หากต้องการให้เรียกได้โดยไม่ต้องล็อกอิน) แล้วใช้ URL ที่ได้เป็น `WEBHOOK_URL` ในหน้า frontend / HTML
 
 
-```javascript
+//```javascript
 // Google Apps Script (Code.js)
 // ตั้งค่า: SHEET_NAME, TELEGRAM_TOKEN, TELEGRAM_CHAT_ID
 
@@ -86,4 +86,5 @@ sendTelegram(
 const output = ContentService.createTextOutput(JSON.stringify(result))
 .setMimeType(ContentService.MimeType.JSON);
 }
+
 
